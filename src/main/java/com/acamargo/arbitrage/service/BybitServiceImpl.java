@@ -23,10 +23,8 @@ import java.util.concurrent.CompletableFuture;
 public class BybitServiceImpl implements BybitService, SymbolProvider {
     public final static String BASE_URI = "https://api.bybit.com/v5/market/";
 
-    @Async("asyncTaskExecutor")
     @Override
-    public CompletableFuture<List<Symbol>> getSymbols() {
-        CompletableFuture<List<Symbol>> completableFuture = new CompletableFuture<>();
+    public List<Symbol> getSymbols() {
 
         List<Symbol> symbols = new ArrayList<>();
 
@@ -52,7 +50,7 @@ public class BybitServiceImpl implements BybitService, SymbolProvider {
                 symbols.add(new Symbol(symbol));
             }
 
-            completableFuture.complete(symbols);
+            return symbols;
 
         } catch (URISyntaxException e) {
             log.warn("Cannot get exchange info", e);
@@ -60,15 +58,10 @@ public class BybitServiceImpl implements BybitService, SymbolProvider {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-
-        return completableFuture;
     }
 
-    @Async("asyncTaskExecutor")
     @Override
-    public CompletableFuture<Book> getOrderBook(String symbol, int count) {
-
-        CompletableFuture<Book> completableFuture = new CompletableFuture<>();
+    public Book getOrderBook(String symbol, int count) {
 
         RestClient defaultClient = RestClient.create();
 
@@ -93,14 +86,11 @@ public class BybitServiceImpl implements BybitService, SymbolProvider {
             bidsNode.forEach(e -> bidOrders.add(new Order(e.get(0).asDouble(), e.get(1).asDouble())));
 
 
-            completableFuture.complete(new Book(bidOrders, askOrders));
+            return new Book(bidOrders, askOrders);
 
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
+        } catch (URISyntaxException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-        return completableFuture;
     }
 }

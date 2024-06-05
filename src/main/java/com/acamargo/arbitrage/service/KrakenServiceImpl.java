@@ -28,9 +28,7 @@ public class KrakenServiceImpl implements KrakenService, SymbolProvider {
     public static final String BASE_URI = "https://api.kraken.com/0/public/";
 
     @Override
-    public CompletableFuture<Book> getOrderBook(String symbol, int count) {
-
-        CompletableFuture<Book> completableFuture = new CompletableFuture<Book>();
+    public Book getOrderBook(String symbol, int count) {
 
         RestClient defaultClient = RestClient.create();
 
@@ -64,7 +62,7 @@ public class KrakenServiceImpl implements KrakenService, SymbolProvider {
 
             }
 
-            completableFuture.complete(new Book(bidOrders, askOrders));
+            return new Book(bidOrders, askOrders);
 
 
         } catch (JsonMappingException e) {
@@ -73,15 +71,10 @@ public class KrakenServiceImpl implements KrakenService, SymbolProvider {
             throw new RuntimeException(e);
         }
 
-
-        return completableFuture;
-
     }
 
-    @Async("asyncTaskExecutor")
     @Override
-    public CompletableFuture<List<Symbol>> getSymbols() {
-        CompletableFuture<List<Symbol>> completableFuture = new CompletableFuture<>();
+    public List<Symbol> getSymbols() {
 
         RestClient defaultClient = RestClient.create();
         var symbolList = new ArrayList<Symbol>();
@@ -108,12 +101,10 @@ public class KrakenServiceImpl implements KrakenService, SymbolProvider {
 
             }
 
-            completableFuture.complete(symbolList);
+            return symbolList;
 
         } catch (URISyntaxException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-
-        return completableFuture;
     }
 }

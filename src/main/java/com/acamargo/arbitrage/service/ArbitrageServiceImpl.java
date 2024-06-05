@@ -1,55 +1,54 @@
 package com.acamargo.arbitrage.service;
 
 import com.acamargo.arbitrage.dto.Arbitrage;
-import com.acamargo.arbitrage.dto.Book;
 import com.acamargo.arbitrage.dto.ExchangeEnum;
 import com.acamargo.arbitrage.dto.Symbol;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
 
 @Service
 @Slf4j
 public class ArbitrageServiceImpl implements ArbitrageService {
 
-    private final SymbolProvider binanceService;
-    private final SymbolProvider krakenService;
-    private final SymbolProvider bybitService;
+    private final ExchangeFacade exchangeFacade;
 
-    public ArbitrageServiceImpl(@Qualifier("binanceService") SymbolProvider binanceService,
-                                @Qualifier("krakenService") SymbolProvider krakenService,
-                                @Qualifier("bybitService") SymbolProvider bybitService) {
-        this.binanceService = binanceService;
-        this.krakenService = krakenService;
-        this.bybitService = bybitService;
+    public ArbitrageServiceImpl(ExchangeFacade exchangeFacade) {
+        this.exchangeFacade = exchangeFacade;
     }
 
+    @Async
     @Override
-    public List<Arbitrage> findArbitrage(ExchangeEnum a, ExchangeEnum b) throws ExecutionException, InterruptedException {
+    public CompletableFuture<List<Arbitrage>> findArbitrage(ExchangeEnum a, ExchangeEnum b) throws ExecutionException, InterruptedException {
+
         var arbitrageList = new ArrayList<Arbitrage>();
 
-        List<Symbol> aSymbols = getSymbols(a);
-        List<Symbol> bSymbols = getSymbols(b);
+        log.info("Find arbitrage for {} and {}", a, b);
+
+        List<Symbol> aSymbols = exchangeFacade.getSymbols(a);
+        List<Symbol> bSymbols = exchangeFacade.getSymbols(b);
 
         List<Symbol> commonSymbols =  aSymbols
                 .parallelStream()
                 .filter(bSymbols::contains)
                 .toList();
 
+        log.info("Symbols retrieved for {} and {}", a, b);
+
         commonSymbols
                 .parallelStream()
                 .forEach(symbol -> {
 
                     try {
-                        var aOrders = getOrderBook(a, 1, symbol);
-                        var bOrders = getOrderBook(b, 1, symbol);
+                        var aOrders = exchangeFacade.getOrderBook(a, 1, symbol);
+                        var bOrders = exchangeFacade.getOrderBook(b, 1, symbol);
+
+                        log.info("Retrieved orderbooks for {}", symbol);
 
                         if (!aOrders.bids().isEmpty()
                                 && !aOrders.asks().isEmpty()
@@ -81,74 +80,11 @@ public class ArbitrageServiceImpl implements ArbitrageService {
 
                 });
 
+        log.info("Finish find arbitrage for {} and {}", a, b);
 
-        return arbitrageList;
+        return CompletableFuture.completedFuture(arbitrageList);
     }
 
-    private List<Symbol> getSymbols(ExchangeEnum exchange) throws ExecutionException, InterruptedException {
 
-        return switch (exchange) {
-            case BYBIT -> bybitService.getSymbols().get();
-            case KRAKEN -> krakenService.getSymbols().get();
-            case BINANCE -> binanceService.getSymbols().get();
-        };
-    }
 
-    private Book getOrderBook(ExchangeEnum exchange, int count, Symbol symbol) throws ExecutionException, InterruptedException {
-
-        return switch (exchange) {
-            case BYBIT -> bybitService.getOrderBook(symbol.symbol(), count).get();
-            case KRAKEN -> krakenService.getOrderBook(symbol.symbol(), count).get();
-            case BINANCE -> binanceService.getOrderBook(symbol.symbol(), count).get();
-        };
-    }
-
-    public List<Symbol> getSymbols() throws ExecutionException, InterruptedException {
-        List<Symbol> krakenSymbols = krakenService.getSymbols().get();
-        List<Symbol> binanceSymbols = binanceService.getSymbols().get();
-
-        return krakenSymbols
-                .parallelStream()
-                .filter(binanceSymbols::contains)
-                .collect(Collectors.toList());
-
-    }
-
-//    @Override
-//    public void findArbitrage() throws ExecutionException, InterruptedException {
-//
-//        this.getSymbols()
-//                .parallelStream()
-//                .forEach(symbol -> {
-//
-//                    try {
-//                        var binanceOrders = binanceService.getOrderBook(symbol.symbol(), 1).get();
-//                        var krakenOrders = krakenService.getOrderBook(symbol.symbol(), 1).get();
-//
-//                        if (binanceOrders.bids().size() > 0
-//                                && krakenOrders.bids().size() > 0
-//                                && krakenOrders.asks().size() > 0
-//                                && krakenOrders.asks().size() > 0) {
-//
-//                            if (binanceOrders.asks().get(0).price() < krakenOrders.bids().get(0).price()) {
-//
-//
-//                                log.info("Arbitrage BUY {} ( Binance ) ask={} q={} SELL ( Kraken ) bid={} q={} profit={}%", symbol.symbol(),
-//                                        binanceOrders.asks().get(0).price(), binanceOrders.asks().get(0).quantity(),
-//                                        krakenOrders.bids().get(0).price(), krakenOrders.bids().get(0).quantity(),
-//                                        format("%.02f", (krakenOrders.bids().get(0).price()/binanceOrders.asks().get(0).price()*100)-100));
-//                            }
-//
-//                        }
-//
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    } catch (ExecutionException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//
-//                });
-//
-//
-//    }
 }

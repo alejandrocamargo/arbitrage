@@ -28,35 +28,28 @@ public class BinanceServiceImpl implements BinanceService, SymbolProvider {
 
     public static final String BASE_URI = "https://api.binance.com/api/v3/";
 
-    @Async("asyncTaskExecutor")
     @Override
-    public CompletableFuture<List<Symbol>> getSymbols() {
-        CompletableFuture<List<Symbol>> completableFuture = new CompletableFuture<>();
+    public List<Symbol> getSymbols() {
 
         RestClient defaultClient = RestClient.create();
 
         try {
-            BinanceExchangeInfo info = defaultClient
+            return defaultClient
                     .get()
                     .uri(new URI(BASE_URI + "exchangeInfo"))
                     .retrieve()
-                    .body(BinanceExchangeInfo.class);
-
-            completableFuture.complete(info.symbols());
+                    .body(BinanceExchangeInfo.class).symbols();
 
         } catch (URISyntaxException e) {
             log.warn("Cannot get exchange info", e);
             throw new RuntimeException(e);
         }
 
-        return completableFuture;
     }
 
 
-    @Async("asyncTaskExecutor")
     @Override
-    public CompletableFuture<Book> getOrderBook(String symbol, int count) {
-        CompletableFuture<Book> completableFuture = new CompletableFuture<>();
+    public Book getOrderBook(String symbol, int count) {
 
         RestClient defaultClient = RestClient.create();
 
@@ -80,7 +73,7 @@ public class BinanceServiceImpl implements BinanceService, SymbolProvider {
             bidsNode.forEach(e -> bidOrders.add(new Order(e.get(0).asDouble(), e.get(1).asDouble())));
 
 
-            completableFuture.complete(new Book(bidOrders, askOrders));
+            return new Book(bidOrders, askOrders);
 
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -88,7 +81,6 @@ public class BinanceServiceImpl implements BinanceService, SymbolProvider {
             throw new RuntimeException(e);
         }
 
-        return completableFuture;
     }
 
 }

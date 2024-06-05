@@ -23,9 +23,17 @@ public class Arbitrage {
     private double sellPrice;
     private double sellQuantity;
 
-
     public BigDecimal getPercentageProfit() {
         return BigDecimal.valueOf((sellPrice / buyPrice * 100) - 100);
+    }
+
+    public double calculateProfit() {
+        double maxQuantity = Math.min(buyQuantity, sellQuantity);
+
+        double buyTotal = buyPrice * maxQuantity;
+        double sellTotal = sellPrice * maxQuantity;
+
+        return sellTotal - buyTotal;
     }
 
     @Override

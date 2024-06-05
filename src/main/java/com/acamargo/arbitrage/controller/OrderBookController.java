@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -35,33 +35,41 @@ public class OrderBookController {
         this.bybitService = bybitService;
     }
     @GetMapping("symbols")
-    public List<Symbol> getSymbols() throws ExecutionException, InterruptedException {
+    public List<Symbol> getSymbols() {
 
-        return bybitService.getSymbols().get();
+        return bybitService.getSymbols();
 
     }
 
     @GetMapping("orderbook")
     public Book getOrderBook(@PathParam("symbol") String symbol, @PathParam("count") int count,
-                             @PathParam("exchange") ExchangeEnum exchange)
-            throws ExecutionException, InterruptedException {
+                             @PathParam("exchange") ExchangeEnum exchange) {
 
         return switch (exchange) {
-            case KRAKEN -> krakenService.getOrderBook(symbol, count).get();
-            case BINANCE -> binanceService.getOrderBook(symbol, count).get();
-            case BYBIT -> bybitService.getOrderBook(symbol, count).get();
+            case KRAKEN -> krakenService.getOrderBook(symbol, count);
+            case BINANCE -> binanceService.getOrderBook(symbol, count);
+            case BYBIT -> bybitService.getOrderBook(symbol, count);
         };
 
     }
 
     @GetMapping("arbitrage")
     public List<Arbitrage> doArbitrage() throws ExecutionException, InterruptedException {
-        List<Arbitrage> ls = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BYBIT);
-        ls.addAll(arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.KRAKEN));
-        ls.addAll(arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.BINANCE));
-        ls.addAll(arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.BYBIT));
-        ls.addAll(arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.KRAKEN));
-        ls.addAll(arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BINANCE));
+        var f1 = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BYBIT);
+        var f2 = arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.KRAKEN);
+        var f3 = arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.BINANCE);
+        var f4 = arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.BYBIT);
+        var f5 = arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.KRAKEN);
+        var f6 = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BINANCE);
+
+        CompletableFuture.allOf(f1, f2, f3, f4, f5, f6).join();
+
+        var ls = f1.get();
+        ls.addAll(f2.get());
+        ls.addAll(f3.get());
+        ls.addAll(f4.get());
+        ls.addAll(f5.get());
+        ls.addAll(f6.get());
 
         ls.sort(new Arbitrage.ArbitrageProfitabilityComparator());
 
