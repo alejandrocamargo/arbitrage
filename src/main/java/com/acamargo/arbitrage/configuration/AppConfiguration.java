@@ -1,5 +1,6 @@
 package com.acamargo.arbitrage.configuration;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -9,6 +10,7 @@ import java.util.concurrent.Executor;
 
 @Configuration
 @EnableAsync
+@EnableCaching
 public class AppConfiguration {
 
     @Bean(name = "asyncTaskExecutor")

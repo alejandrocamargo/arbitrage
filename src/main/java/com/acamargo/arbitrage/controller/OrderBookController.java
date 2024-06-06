@@ -5,6 +5,7 @@ import com.acamargo.arbitrage.dto.Book;
 import com.acamargo.arbitrage.dto.ExchangeEnum;
 import com.acamargo.arbitrage.dto.Symbol;
 import com.acamargo.arbitrage.service.ArbitrageService;
+import com.acamargo.arbitrage.service.ProfitCalculatorService;
 import com.acamargo.arbitrage.service.SymbolProvider;
 import jakarta.websocket.server.PathParam;
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +25,18 @@ public class OrderBookController {
     private final SymbolProvider krakenService;
     private final SymbolProvider bybitService;
     private final ArbitrageService arbitrageService;
+    private final ProfitCalculatorService profitCalculatorService;
 
     public OrderBookController(@Qualifier("binanceService") SymbolProvider binanceService,
                                @Qualifier("krakenService") SymbolProvider krakenService,
                                @Qualifier("bybitService") SymbolProvider bybitService,
-                               ArbitrageService arbitrageService) {
+                               ArbitrageService arbitrageService,
+                               ProfitCalculatorService profitCalculatorService) {
         this.binanceService = binanceService;
         this.krakenService = krakenService;
         this.arbitrageService = arbitrageService;
         this.bybitService = bybitService;
+        this.profitCalculatorService = profitCalculatorService;
     }
     @GetMapping("symbols")
     public List<Symbol> getSymbols() {
@@ -70,6 +74,8 @@ public class OrderBookController {
         ls.addAll(f4.get());
         ls.addAll(f5.get());
         ls.addAll(f6.get());
+
+        ls.forEach(profitCalculatorService::calculateProfit);
 
         ls.sort(new Arbitrage.ArbitrageProfitabilityComparator());
 

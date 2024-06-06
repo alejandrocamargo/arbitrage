@@ -23,17 +23,10 @@ public class Arbitrage {
     private double sellPrice;
     private double sellQuantity;
 
+    private double profitUsd;
+
     public BigDecimal getPercentageProfit() {
         return BigDecimal.valueOf((sellPrice / buyPrice * 100) - 100);
-    }
-
-    public double calculateProfit() {
-        double maxQuantity = Math.min(buyQuantity, sellQuantity);
-
-        double buyTotal = buyPrice * maxQuantity;
-        double sellTotal = sellPrice * maxQuantity;
-
-        return sellTotal - buyTotal;
     }
 
     @Override
@@ -54,7 +47,7 @@ public class Arbitrage {
     public static class ArbitrageProfitabilityComparator implements Comparator<Arbitrage> {
         @Override
         public int compare(Arbitrage o1, Arbitrage o2) {
-            return o1.getPercentageProfit().doubleValue() < o2.getPercentageProfit().doubleValue() ? 1 : -1;
+            return o1.getProfitUsd() < o2.getProfitUsd() ? 1 : -1;
         }
     }
 }

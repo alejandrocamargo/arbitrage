@@ -3,23 +3,20 @@ package com.acamargo.arbitrage.service;
 import com.acamargo.arbitrage.dto.Book;
 import com.acamargo.arbitrage.dto.Order;
 import com.acamargo.arbitrage.dto.Symbol;
+import com.acamargo.arbitrage.dto.binance.AssetPrice;
 import com.acamargo.arbitrage.dto.binance.BinanceExchangeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Qualifier("binanceService")
@@ -81,6 +78,27 @@ public class BinanceServiceImpl implements BinanceService, SymbolProvider {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Cacheable("prices")
+    @Override
+    public AssetPrice getAssetPrice(String symbol) {
+        //https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT
+
+        log.info("Getting price from Binance for pair: {}", symbol);
+
+        RestClient defaultClient = RestClient.create();
+
+        try {
+            return defaultClient
+                    .get()
+                    .uri(new URI(String.format(BASE_URI + "ticker/price?symbol=%s", symbol)))
+                    .retrieve()
+                    .body(AssetPrice.class);
+
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
