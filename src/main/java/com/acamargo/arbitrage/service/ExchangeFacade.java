@@ -5,6 +5,9 @@ import com.acamargo.arbitrage.dto.ExchangeEnum;
 import com.acamargo.arbitrage.dto.Symbol;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -41,6 +44,7 @@ public class ExchangeFacade {
 
     }
 
+    @Cacheable("book")
     public Book getOrderBook(ExchangeEnum exchange, int count, Symbol symbol) throws ExecutionException, InterruptedException {
 
         return switch (exchange) {
@@ -48,5 +52,11 @@ public class ExchangeFacade {
             case KRAKEN -> krakenService.getOrderBook(symbol.symbol(), count);
             case BINANCE -> binanceService.getOrderBook(symbol.symbol(), count);
         };
+    }
+
+    @CacheEvict(value = "book", allEntries = true)
+    @Scheduled(fixedRateString = "60000")
+    public void emptyBookCache() {
+        log.info("emptying book cache");
     }
 }
