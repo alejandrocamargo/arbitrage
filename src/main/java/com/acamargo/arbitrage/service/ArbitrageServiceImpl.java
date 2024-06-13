@@ -38,7 +38,7 @@ public class ArbitrageServiceImpl implements ArbitrageService {
                 .filter(bSymbols::contains)
                 .toList();
 
-        log.info("Symbols retrieved for {} and {}", a, b);
+        //log.info("Symbols retrieved for {} and {}", a, b);
 
         commonSymbols
                 .parallelStream()
@@ -48,7 +48,7 @@ public class ArbitrageServiceImpl implements ArbitrageService {
                         var aOrders = exchangeFacade.getOrderBook(a, 1, symbol);
                         var bOrders = exchangeFacade.getOrderBook(b, 1, symbol);
 
-                        log.info("Retrieved orderbooks for {}", symbol);
+                        //log.info("Retrieved orderbooks for {}", symbol);
 
                         if (!aOrders.bids().isEmpty()
                                 && !aOrders.asks().isEmpty()
@@ -66,6 +66,7 @@ public class ArbitrageServiceImpl implements ArbitrageService {
                                                 .sellExchange(b)
                                                 .sellPrice(bOrders.bids().getFirst().price())
                                                 .sellQuantity(bOrders.bids().getFirst().quantity())
+                                                .timestamp(System.currentTimeMillis())
                                                 .build()
                                 );
 
@@ -84,7 +85,5 @@ public class ArbitrageServiceImpl implements ArbitrageService {
 
         return CompletableFuture.completedFuture(arbitrageList);
     }
-
-
 
 }
