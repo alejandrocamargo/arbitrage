@@ -31,7 +31,7 @@ public class ProfitCalculatorServiceImpl implements ProfitCalculatorService {
         double profit =  sellTotal - buyTotal;
 
         Arrays.stream(BaseAssetEnum.values())
-                .filter(base -> arbitrage.getSymbol().symbol().endsWith(base.toString()))
+                .filter(base -> arbitrage.getSymbol().getSanitizedSymbol().endsWith(base.toString()))
                 .findAny()
                 .ifPresent(base -> {
 

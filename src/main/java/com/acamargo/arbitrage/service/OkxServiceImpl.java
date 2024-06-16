@@ -4,8 +4,8 @@ import com.acamargo.arbitrage.dto.Book;
 import com.acamargo.arbitrage.dto.Order;
 import com.acamargo.arbitrage.dto.Symbol;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -13,63 +13,62 @@ import org.springframework.web.client.RestClient;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
-@Qualifier("bybitService")
 @Service
-@Slf4j
-public class BybitServiceImpl implements BybitService, SymbolProvider {
-    public final static String BASE_URI = "https://api.bybit.com/v5/market/";
+@Qualifier("okxService")
+public class OkxServiceImpl implements OkxService, SymbolProvider {
+    public final String BASE_URI = "https://www.okx.com/api/v5/market";
 
     @Override
     public List<Symbol> getSymbols() {
 
-        List<Symbol> symbols = new ArrayList<>();
-
         RestClient defaultClient = RestClient.create();
+        var symbolList = new ArrayList<Symbol>();
 
         try {
             String json = defaultClient
                     .get()
-                    .uri(new URI(BASE_URI + "tickers?category=spot"))
+                    .uri(new URI(BASE_URI + "/tickers?instType=SPOT"))
                     .retrieve()
                     .body(String.class);
 
-            ObjectMapper mapper = new ObjectMapper();
-
+            var mapper = new ObjectMapper();
             var node = mapper.readTree(json);
 
-            node = node.get("result").get("list");
+            node = node.get("data");
 
-            var i = node.elements();
+            Iterator<JsonNode> i = node.elements();
 
             while (i.hasNext()) {
-                var symbol = i.next().get("symbol").asText();
-                symbols.add(new Symbol(symbol));
+                JsonNode data = i.next();
+                Symbol symbol = new Symbol(data.get("instId").textValue());
+                symbolList.add(symbol);
             }
 
-            return symbols;
-
-        } catch (URISyntaxException e) {
-            log.warn("Cannot get exchange info", e);
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
+        } catch (URISyntaxException | JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        return symbolList;
+
+
     }
 
     @Override
     public Book getOrderBook(String symbol, int count) {
-
         RestClient defaultClient = RestClient.create();
 
         List<Order> askOrders = new ArrayList<>();
         List<Order> bidOrders = new ArrayList<>();
 
+
         try {
+
             String json = defaultClient
                     .get()
-                    .uri(new URI(String.format(BASE_URI + "orderbook?category=spot&limit=%s&symbol=%s", count, symbol)))
+                    .uri(new URI(BASE_URI + String.format("/books?sz=%s&instId=%s", count, symbol)))
                     .retrieve()
                     .body(String.class);
 
@@ -77,16 +76,17 @@ public class BybitServiceImpl implements BybitService, SymbolProvider {
 
             var node = mapper.readTree(json);
 
-            var bidsNode = node.get("result").get("b");
-            var asksNode = node.get("result").get("a");
+            node = node.get("data");
+            node = node.get(0);
 
-            asksNode.forEach(e -> askOrders.add(new Order(e.get(0).asDouble(), e.get(1).asDouble())));
-            bidsNode.forEach(e -> bidOrders.add(new Order(e.get(0).asDouble(), e.get(1).asDouble())));
+            var nodeBids = node.get("bids");
+            var nodeAsks = node.get("asks");
 
-        } catch (URISyntaxException | JsonProcessingException e) {
+            nodeBids.forEach(b -> bidOrders.add(new Order(b.get(0).asDouble(), b.get(1).asDouble())));
+            nodeAsks.forEach(b -> askOrders.add(new Order(b.get(0).asDouble(), b.get(1).asDouble())));
+
+        } catch (JsonProcessingException | URISyntaxException e) {
             throw new RuntimeException(e);
-        } catch (NullPointerException n) {
-            log.error("NullPointer getting orderBook for: {}", symbol);
         }
 
         return new Book(askOrders, bidOrders);

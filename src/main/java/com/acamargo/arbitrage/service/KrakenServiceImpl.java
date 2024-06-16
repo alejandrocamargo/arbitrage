@@ -96,8 +96,7 @@ public class KrakenServiceImpl implements KrakenService, SymbolProvider {
             while (i.hasNext()) {
 
                 JsonNode next = i.next();
-                symbolList.add(new Symbol(next.get("altname").textValue()
-                        .replace("XBT", "BTC")));
+                symbolList.add(new Symbol(next.get("altname").textValue()));
 
             }
 

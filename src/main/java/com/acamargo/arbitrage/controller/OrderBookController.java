@@ -23,16 +23,22 @@ public class OrderBookController {
     private final SymbolProvider binanceService;
     private final SymbolProvider krakenService;
     private final SymbolProvider bybitService;
+    private final SymbolProvider okxService;
+    private final SymbolProvider bitfinexService;
     private final ArbitrageAggregatorService arbitrageAggregatorService;
 
 
     public OrderBookController(@Qualifier("binanceService") SymbolProvider binanceService,
                                @Qualifier("krakenService") SymbolProvider krakenService,
                                @Qualifier("bybitService") SymbolProvider bybitService,
+                               @Qualifier("okxService") SymbolProvider okxService,
+                               @Qualifier("bitfinexService") SymbolProvider bitfinexService,
                                ArbitrageAggregatorService arbitrageAggregatorService) {
         this.binanceService = binanceService;
         this.krakenService = krakenService;
         this.bybitService = bybitService;
+        this.okxService = okxService;
+        this.bitfinexService = bitfinexService;
         this.arbitrageAggregatorService = arbitrageAggregatorService;
     }
     @GetMapping("symbols")
@@ -50,6 +56,8 @@ public class OrderBookController {
             case KRAKEN -> krakenService.getOrderBook(symbol, count);
             case BINANCE -> binanceService.getOrderBook(symbol, count);
             case BYBIT -> bybitService.getOrderBook(symbol, count);
+            case OKX -> okxService.getOrderBook(symbol, count);
+            case BITFINEX -> bitfinexService.getOrderBook(symbol, count);
         };
 
     }

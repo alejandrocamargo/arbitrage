@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorService {
 
+    public static final double FILTER_PROFIT_PERCENTAGE_HIGH = 200d;
+    public static final double FILTER_PROFIT_PERCENTAGE_LOW = 0.1d;
+
     private final ArbitrageService arbitrageService;
     private final ProfitCalculatorService profitCalculatorService;
 
@@ -39,7 +42,25 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
             var f5 = arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.KRAKEN);
             var f6 = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BINANCE);
 
-            CompletableFuture.allOf(f1, f2, f3, f4, f5, f6).join();
+//            var f7 = arbitrageService.findArbitrage(ExchangeEnum.OKX, ExchangeEnum.BYBIT);
+//            var f8 = arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.OKX);
+//            var f9 = arbitrageService.findArbitrage(ExchangeEnum.OKX, ExchangeEnum.KRAKEN);
+//            var f10 = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.OKX);
+//            var f11 = arbitrageService.findArbitrage(ExchangeEnum.OKX, ExchangeEnum.BINANCE);
+//            var f12 = arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.OKX);
+
+//              CompletableFuture.allOf(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12).join();
+
+            var f13 = arbitrageService.findArbitrage(ExchangeEnum.BITFINEX, ExchangeEnum.BYBIT);
+            var f14 = arbitrageService.findArbitrage(ExchangeEnum.BITFINEX, ExchangeEnum.BINANCE);
+            var f15 = arbitrageService.findArbitrage(ExchangeEnum.BITFINEX, ExchangeEnum.KRAKEN);
+            var f16 = arbitrageService.findArbitrage(ExchangeEnum.BYBIT, ExchangeEnum.BITFINEX);
+            var f17 = arbitrageService.findArbitrage(ExchangeEnum.BINANCE, ExchangeEnum.BITFINEX);
+            var f18 = arbitrageService.findArbitrage(ExchangeEnum.KRAKEN, ExchangeEnum.BITFINEX);
+
+           // CompletableFuture.allOf(f1, f2, f3, f4, f5, f6).join();
+
+            CompletableFuture.allOf(f1, f2, f3, f4, f5, f6, f13, f14, f15, f16, f17, f18).join();
 
             ls = f1.get();
             ls.addAll(f2.get());
@@ -47,6 +68,23 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
             ls.addAll(f4.get());
             ls.addAll(f5.get());
             ls.addAll(f6.get());
+
+            ls.addAll(f13.get());
+            ls.addAll(f14.get());
+            ls.addAll(f15.get());
+            ls.addAll(f16.get());
+            ls.addAll(f17.get());
+            ls.addAll(f18.get());
+
+
+
+//            ls.addAll(f7.get());
+//            ls.addAll(f8.get());
+//            ls.addAll(f9.get());
+//            ls.addAll(f10.get());
+//            ls.addAll(f11.get());
+//            ls.addAll(f12.get());
+
 
             // keep only the arbitrages currently on going
             Set<Integer> intersectionSet = arbitrageMap.keySet();
@@ -82,10 +120,13 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
 
     public List<Arbitrage> getArbitrages() {
         // return an ordered list from map
-        List<Arbitrage> retList = new ArrayList<>(arbitrageMap.values());
 
-        retList.sort(new Arbitrage.ArbitrageProfitabilityComparator());
-
-        return retList;
+        return new ArrayList<>(arbitrageMap.values())
+                .stream()
+                .filter(e -> e.getPercentageProfit().doubleValue() < FILTER_PROFIT_PERCENTAGE_HIGH)
+                .filter(e -> e.getPercentageProfit().doubleValue() > FILTER_PROFIT_PERCENTAGE_LOW)
+                .filter(e -> !"ZECUSDT".equalsIgnoreCase(e.getSymbol().symbol()))
+                .sorted(new Arbitrage.ArbitrageProfitabilityComparator())
+                .collect(Collectors.toList());
     }
 }

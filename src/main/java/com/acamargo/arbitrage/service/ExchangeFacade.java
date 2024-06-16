@@ -20,13 +20,20 @@ public class ExchangeFacade {
     private final SymbolProvider binanceService;
     private final SymbolProvider krakenService;
     private final SymbolProvider bybitService;
+    private final SymbolProvider okxService;
+    private final SymbolProvider bitfinexService;
 
     public ExchangeFacade(@Qualifier("binanceService") SymbolProvider binanceService,
                           @Qualifier("krakenService") SymbolProvider krakenService,
-                          @Qualifier("bybitService") SymbolProvider bybitService) {
+                          @Qualifier("bybitService") SymbolProvider bybitService,
+                          @Qualifier("okxService") SymbolProvider okxService,
+                          @Qualifier("bitfinexService") SymbolProvider bitfinexService) {
+
         this.binanceService = binanceService;
         this.krakenService = krakenService;
         this.bybitService = bybitService;
+        this.okxService = okxService;
+        this.bitfinexService = bitfinexService;
     }
 
     public List<Symbol> getSymbols(ExchangeEnum exchange) throws ExecutionException, InterruptedException {
@@ -36,6 +43,8 @@ public class ExchangeFacade {
             case BYBIT -> bybitService.getSymbols();
             case KRAKEN -> krakenService.getSymbols();
             case BINANCE -> binanceService.getSymbols();
+            case OKX -> okxService.getSymbols();
+            case BITFINEX -> bitfinexService.getSymbols();
         };
 
         log.info("Found {} symbols", ls);
@@ -51,6 +60,8 @@ public class ExchangeFacade {
             case BYBIT -> bybitService.getOrderBook(symbol.symbol(), count);
             case KRAKEN -> krakenService.getOrderBook(symbol.symbol(), count);
             case BINANCE -> binanceService.getOrderBook(symbol.symbol(), count);
+            case OKX -> okxService.getOrderBook(symbol.symbol(), count);
+            case BITFINEX -> bitfinexService.getOrderBook(symbol.symbol(), count);
         };
     }
 
