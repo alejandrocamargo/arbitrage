@@ -79,8 +79,8 @@ public class BitfinexServiceImpl implements SymbolProvider, BitfinexService {
             JsonNode asksNode = node.get(1);
             JsonNode bidsNode = node.get(0);
 
-            askOrders.add(new Order(asksNode.get(0).asDouble(), asksNode.get(2).asDouble()));
-            bidOrders.add(new Order(bidsNode.get(0).asDouble(), Math.abs(bidsNode.get(2).asDouble())));
+            askOrders.add(new Order(Math.abs(asksNode.get(0).asDouble()), Math.abs(asksNode.get(2).asDouble())));
+            bidOrders.add(new Order(Math.abs(bidsNode.get(0).asDouble()), Math.abs(bidsNode.get(2).asDouble())));
 
             return new Book(bidOrders, askOrders);
 

@@ -3,6 +3,7 @@ package com.acamargo.arbitrage.service;
 import com.acamargo.arbitrage.dto.Arbitrage;
 import com.acamargo.arbitrage.dto.ExchangeEnum;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -23,11 +24,15 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
 
     private final Map<Integer, Arbitrage> arbitrageMap = new HashMap<>();
 
+    private final String blacklist;
+
     public ArbitrageAggregatorServiceImpl(ArbitrageService arbitrageService,
-                                          ProfitCalculatorService profitCalculatorService) {
+                                          ProfitCalculatorService profitCalculatorService,
+                                          @Value("${assets.blacklist}") String blacklist) {
 
         this.arbitrageService = arbitrageService;
         this.profitCalculatorService = profitCalculatorService;
+        this.blacklist = blacklist;
     }
 
     @Scheduled(fixedRate = 60000, initialDelay = 30000)
@@ -85,6 +90,7 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
 //            ls.addAll(f11.get());
 //            ls.addAll(f12.get());
 
+            ls.forEach(a -> log.info(a.toString()));
 
             // keep only the arbitrages currently on going
             Set<Integer> intersectionSet = arbitrageMap.keySet();
@@ -125,7 +131,7 @@ public class ArbitrageAggregatorServiceImpl implements ArbitrageAggregatorServic
                 .stream()
                 .filter(e -> e.getPercentageProfit().doubleValue() < FILTER_PROFIT_PERCENTAGE_HIGH)
                 .filter(e -> e.getPercentageProfit().doubleValue() > FILTER_PROFIT_PERCENTAGE_LOW)
-                .filter(e -> !"ZECUSDT".equalsIgnoreCase(e.getSymbol().symbol()))
+                .filter(e -> !List.of(blacklist.split(",")).contains(e.getSymbol().symbol()) )
                 .sorted(new Arbitrage.ArbitrageProfitabilityComparator())
                 .collect(Collectors.toList());
     }

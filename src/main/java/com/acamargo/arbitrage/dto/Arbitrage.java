@@ -34,7 +34,7 @@ public class Arbitrage {
     @Override
     public String toString() {
         return format(
-                "Arbitrage BUY {} ( {} ) ask={} q={} SELL ( {} ) bid={} q={} profit={}%",
+                "Arbitrage BUY %s ( %s ) ask=%s q=%s SELL ( %s ) bid=%s q=%s profit=%s",
                 symbol.symbol(),
                 buyExchange,
                 buyPrice,

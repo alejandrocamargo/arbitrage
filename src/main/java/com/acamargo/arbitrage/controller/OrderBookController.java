@@ -64,6 +64,8 @@ public class OrderBookController {
 
     @GetMapping("arbitrage")
     public List<Arbitrage> doArbitrage() {
+
+        log.info("Request received for arbitrage");
         return arbitrageAggregatorService.getArbitrages();
 
     }
